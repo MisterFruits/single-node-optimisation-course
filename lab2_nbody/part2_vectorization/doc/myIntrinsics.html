@@ -1,0 +1,289 @@
+<!DOCTYPE HTML>
+<html>
+ <head>
+  <meta charset="utf-8"/>
+  <title>
+   myIntrinsics - Optimization training at CINES
+  </title>
+  <link href="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.1/styles/github.min.css" rel="stylesheet"/>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.1/highlight.min.js">
+  </script>
+  <script>
+   hljs.initHighlightingOnLoad();
+  </script>
+  <style type="text/css">
+   body{font:16px Helvetica,Arial,sans-serif;line-height:1.4;color:#333;word-wrap:break-word;background-color:#fff;padding:10px 15px}strong{font-weight:700}h1{font-size:2em;margin:.67em 0;text-align:center}h2{font-size:1.75em}h3{font-size:1.5em}h4{font-size:1.25em}h1,h2,h3,h4,h5,h6{font-weight:700;position:relative;margin-top:15px;margin-bottom:15px;line-height:1.1}h1,h2{border-bottom:1px solid #eee}hr{height:0;margin:15px 0;overflow:hidden;background:0 0;border:0;border-bottom:1px solid #ddd}a{color:#4183C4}a.absent{color:#c00}ol,ul{padding-left:15px;margin-left:5px}ol{list-style-type:lower-roman}table{padding:0}table tr{border-top:1px solid #ccc;background-color:#fff;margin:0;padding:0}table tr:nth-child(2n){background-color:#aaa}table tr th{font-weight:700;border:1px solid #ccc;text-align:left;margin:0;padding:6px 13px}table tr td{border:1px solid #ccc;text-align:left;margin:0;padding:6px 13px}table tr td :first-child,table tr th :first-child{margin-top:0}table tr td:last-child,table tr th :last-child{margin-bottom:0}img{max-width:100%}code{padding:0 5px;background-color:#d3d3d3}blockquote{padding: 0 15px;border-left:4px solid #ccc}
+  </style>
+ </head>
+ <body>
+  <h1>
+   The myIntrinsics.h wrapper documentation
+  </h1>
+  <h2>
+   Purpose
+  </h2>
+  <p>
+   This is a wrapper for vector intrinsic functions. It works for SSE-128, AVX-256 and ARM NEON-128 instructions.
+   <br/>
+   SSE-128 and AVX-256 wrapper supports simple and double precision floating-point numbers. There is no support for integers.
+   <br/>
+   ARM NEON-128 wrapper supports only simple precision floating-point numbers.
+  </p>
+  <p>
+   With the
+   <code>
+    myIntrinsics.h
+   </code>
+   wrapper you do not need to write a specific intrinsic code anymore. Just use provided functions and the wrapper will automatically generates the right intrisic calls.
+  </p>
+  <h2>
+   Manual
+  </h2>
+  <h3>
+   Vector register declaration
+  </h3>
+  <p>
+   Just use the
+   <code>
+    vec
+   </code>
+   type.
+  </p>
+  <pre><code class="c">vec r1, r2, r3; // we have declared 3 registers
+</code></pre>
+  <p>
+   But we do not know the size of the vectors here. The size of vectors can be read from the
+   <code>
+    VECTOR_SIZE
+   </code>
+   macro.
+  </p>
+  <pre><code class="c">for(int i = 0; i &lt; n; i += VECTOR_SIZE) {
+    // ...
+}
+</code></pre>
+  <h3>
+   Vector load and store instructions
+  </h3>
+  <p>
+   Firstly, vectors loads or stores need to be aligned on the vector size.
+   <br/>
+   The
+   <code>
+    REQUIRED_ALIGNEMENT
+   </code>
+   macro  returns the good alignment (in bytes) for data allocations depending on the instructions type.
+  </p>
+  <pre><code class="c">float *myPointer = (float*)_mm_malloc(n * sizeof(float), REQUIRED_ALIGNEMENT);
+</code></pre>
+  <p>
+   Now, if the data are correctly allocated we can perform a vector loading with the
+   <code>
+    vec_load
+   </code>
+   call:
+  </p>
+  <pre><code class="c">// prototype
+vec vec_load(type *mem_addr);
+
+// example of use
+int n = VECTOR_SIZE * 10;
+float *myPointer = (float*)_mm_malloc(n * sizeof(float), REQUIRED_ALIGNEMENT);
+int i = 0;
+vec r1 = vec_load(myPointer + i*VECTOR_SIZE);
+</code></pre>
+  <p>
+   Store can be done with the
+   <code>
+    vec_store
+   </code>
+   call:
+  </p>
+  <pre><code class="c">// prototype
+void vec_store(type *mem_addr, vec v);
+
+// example of use
+int n = VECTOR_SIZE * 10;
+float *myPointer = (float*)_mm_malloc(n * sizeof(float), REQUIRED_ALIGNEMENT);
+int i = 0;
+vec r1 = vec_load(myPointer + i*VECTOR_SIZE);
+
+// do something with r1 (or nothing in fact)
+
+vec_store(myPointer + (i+1)*VECTOR_SIZE, r1);
+
+_mm_free(myPointer);
+</code></pre>
+  <h3>
+   Vector initialization
+  </h3>
+  <p>
+   We can initialize a full vector from a scalar value with the
+   <code>
+    vec_set1
+   </code>
+   call:
+  </p>
+  <pre><code class="c">// prototype
+vec vec_set1(type val);
+
+// example of use
+vec r1; // r1 = | unknown | unknown | unknown | unknown |
+
+r1 = vec_set1(1.0); // r1 = | +1.0 | +1.0 | +1.0 | +1.0 |
+</code></pre>
+  <h3>
+   Vector computational instructions
+  </h3>
+  <p>
+   Add two vectors:
+  </p>
+  <pre><code class="c">// prototype, return v1 + v2
+vec vec_add(vec v1, vec v2);
+
+// example of use
+vec r1, r2, r3;
+
+r1 = vec_set1(1.0);   // r1 = | +1.0 | +1.0 | +1.0 | +1.0 |
+r2 = vec_set2(2.0);   // r2 = | +2.0 | +2.0 | +2.0 | +2.0 |
+
+r3 = vec_add(r1, r2); // r3 = | +3.0 | +3.0 | +3.0 | +3.0 |
+</code></pre>
+  <p>
+   Subtract two vectors:
+  </p>
+  <pre><code class="c">// prototype, return v1 - v2
+vec vec_sub(vec v1, vec v2);
+
+// example of use
+vec r1, r2, r3;
+
+r1 = vec_set1(1.0);   // r1 = | +1.0 | +1.0 | +1.0 | +1.0 |
+r2 = vec_set2(2.0);   // r2 = | +2.0 | +2.0 | +2.0 | +2.0 |
+
+r3 = vec_sub(r1, r2); // r3 = | -1.0 | -1.0 | -1.0 | -1.0 |
+</code></pre>
+  <p>
+   Multiply two vectors:
+  </p>
+  <pre><code class="c">// prototype, return v1 * v2
+vec vec_mul(vec v1, vec v2);
+
+// example of use
+vec r1, r2, r3;
+
+r1 = vec_set1(1.0);   // r1 = | +1.0 | +1.0 | +1.0 | +1.0 |
+r2 = vec_set2(2.0);   // r2 = | +2.0 | +2.0 | +2.0 | +2.0 |
+
+r3 = vec_mul(r1, r2); // r3 = | +2.0 | +2.0 | +2.0 | +2.0 |
+</code></pre>
+  <p>
+   Divide two vectors:
+  </p>
+  <pre><code class="c">// prototype, return v1 / v2
+vec vec_div(vec v1, vec v2);
+
+// example of use
+vec r1, r2, r3;
+
+r1 = vec_set1(1.0);   // r1 = | +1.0 | +1.0 | +1.0 | +1.0 |
+r2 = vec_set2(2.0);   // r2 = | +2.0 | +2.0 | +2.0 | +2.0 |
+
+r3 = vec_div(r1, r2); // r3 = | +0.5 | +0.5 | +0.5 | +0.5 |
+</code></pre>
+  <p>
+   Fused multiply and add of three vectors:
+  </p>
+  <pre><code class="c">// prototype, return (v1 * v2) + v3
+vec vec_fmadd(vec v1, vec v2, vec v3);
+
+// example of use
+vec r1, r2, r3, r4;
+
+r1 = vec_set1(2.0);         // r1 = | +2.0 | +2.0 | +2.0 | +2.0 |
+r2 = vec_set2(3.0);         // r2 = | +3.0 | +3.0 | +3.0 | +3.0 |
+r2 = vec_set2(1.0);         // r3 = | +1.0 | +1.0 | +1.0 | +1.0 |
+
+r4 = vec_fmadd(r1, r2, r3); // r4 = | +7.0 | +7.0 | +7.0 | +7.0 |
+</code></pre>
+  <p>
+   Square root of a vector:
+  </p>
+  <pre><code class="c">// prototype, return sqrt(v1)
+vec vec_sqrt(vec v1);
+
+// example of use
+vec r1, r2;
+
+r1 = vec_set1(9.0); // r1 = | +9.0 | +9.0 | +9.0 | +9.0 |
+
+r2 = vec_sqrt(r1);  // r2 = | +3.0 | +3.0 | +3.0 | +3.0 |
+</code></pre>
+  <p>
+   Reciprocal square root of a vector (be careful: this instrinsic exists only for simple precision floating-point numbers):
+  </p>
+  <pre><code class="c">// prototype, return (1.0 / sqrt(v1))
+vec vec_rsqrt(vec v1);
+
+// example of use
+vec r1, r2;
+
+r1 = vec_set1(9.0); // r1 = | +9.0 | +9.0 | +9.0 | +9.0 |
+
+r2 = vec_rsqrt(r1); // r2 = | +0.3 | +0.3 | +0.3 | +0.3 |
+</code></pre>
+  <h3>
+   Vector comparisons
+  </h3>
+  <p>
+   Find the minimum between two vectors:
+  </p>
+  <pre><code class="c">// prototype, return min(v1, v2)
+vec vec_min(vec v1, vec v2);
+
+// example of use
+vec r1, r2, r3;
+
+r1 = vec_set1(2.0);   // r1 = | +2.0 | +2.0 | +2.0 | +2.0 |
+r2 = vec_set1(3.0);   // r2 = | +3.0 | +3.0 | +3.0 | +3.0 |
+
+r3 = vec_min(r1, r2); // r3 = | +2.0 | +2.0 | +2.0 | +2.0 |
+</code></pre>
+  <p>
+   Find the maximum between two vectors:
+  </p>
+  <pre><code class="c">// prototype, return max(v1, v2)
+vec vec_max(vec v1, vec v2);
+
+// example of use
+vec r1, r2, r3;
+
+r1 = vec_set1(2.0);   // r1 = | +2.0 | +2.0 | +2.0 | +2.0 |
+r2 = vec_set1(3.0);   // r2 = | +3.0 | +3.0 | +3.0 | +3.0 |
+
+r3 = vec_max(r1, r2); // r3 = | +3.0 | +3.0 | +3.0 | +3.0 |
+</code></pre>
+  <h3>
+   Vector rotation
+  </h3>
+  <p>
+   The
+   <code>
+    vec_rot
+   </code>
+   function allows you to perform vector rotation:
+  </p>
+  <pre><code class="c">// prototype
+vec vec_rot(vec v1);
+
+// example of use
+vec r1, r2;
+// let's consider that the r1 register is initialized like this:
+//                   r1 = | +3.0 | +2.0 | +1.0 | +0.0 |
+r2 = vec_rot(r1); // r2 = | +0.0 | +3.0 | +2.0 | +1.0 |
+r1 = vec_rot(r2); // r1 = | +1.0 | +0.0 | +3.0 | +2.0 |
+r2 = vec_rot(r1); // r2 = | +2.0 | +1.0 | +0.0 | +3.0 |
+r1 = vec_rot(r2); // r1 = | +3.0 | +2.0 | +1.0 | +0.0 |
+</code></pre>
+ </body>
+</html>
